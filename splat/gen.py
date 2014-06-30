@@ -146,7 +146,7 @@ class Generator(object):
         frag = Fragment(self.channels, self.rate, (end - start))
         self._run(frag, levels, *args, **kw)
         self.filters.run(frag)
-        self.frag.mix(frag, start)
+        self.frag.mix(frag, start, levels=kw.pop('mix_levels', None))
 
 
 class SourceGenerator(Generator):
@@ -172,7 +172,7 @@ class SourceGenerator(Generator):
         return self._source
 
     def _run(self, frag, levels, freq, phase=0.0, *args, **kw):
-        self.source(frag, levels, freq, phase, *args, **kw)
+        self.source(frag, levels, freq, phase, *args)
 
 
 class SineGenerator(SourceGenerator):
