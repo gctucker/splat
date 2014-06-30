@@ -36,6 +36,9 @@ def check_version(ver):
 audio_formats = [(SAMPLE_FLOAT, 64), (SAMPLE_FLOAT, 32),
                  (SAMPLE_INT, 16), (SAMPLE_INT, 8)]
 
+def tuplise(v, n):
+    return tuple(v for x in range(n))
+
 class Signal(_splat.Signal):
 
     """A general purpose signal.
