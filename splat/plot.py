@@ -47,3 +47,37 @@ def spline(spline, n=100, w=400, h=400):
         c.create_line(x, (h - y0), x1, (h - y))
         y0 = y
     mainloop()
+
+def frag(frag, w=400, h=200):
+    if (w < 2) or (h < 2):
+        raise ValueError("Invalid view parameters")
+
+    width = w
+    height = h * frag.channels
+    scale = h / 2
+    master = Tk()
+    c = Canvas(master, width=width, height=height)
+    c.pack()
+    c.create_rectangle(0, 0, width, height, fill="white")
+
+    axes = list()
+    for n in range(frag.channels):
+        y0 = h * (n + 0.5)
+        c.create_line(0, y0, width, y0)
+        axes.append(y0)
+
+    i = 0
+    y0 = tuple(0.0 for n in range(frag.channels))
+    for x in range(w):
+        j = frag.s2n((x + 1)* frag.duration / w)
+        y1 = tuple(0.0 for n in range(frag.channels))
+        l = j - i
+        for n in range(i, j):
+            y1 = tuple((a + b) for a, b in zip(y1, frag[n]))
+        y1 = tuple(y * scale / l for y in y1)
+        for axis, a, b in zip(axes, y0, y1):
+            c.create_line(x, (axis - a), (x + 1), (axis - b))
+        i = j
+        y0 = y1
+
+    mainloop()
