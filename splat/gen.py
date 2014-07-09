@@ -66,8 +66,6 @@ class Generator(object):
 
     @levels.setter
     def levels(self, value):
-        if not isinstance(value, float) and len(value) != self.frag.channels:
-            raise ValueError("Invalid levels value")
         self._levels = value
 
     @property
@@ -117,7 +115,7 @@ class Generator(object):
     def time_stretch(self, value):
         self._time_stretch = value
 
-    def _run(self, frag, *args, **kw):
+    def _run(self, frag, levels, origin, *args, **kw):
         """Main method, designed to be invoked by sub-classes via
         :py:meth:`splat.gen.Generator.run`
         """
@@ -144,7 +142,7 @@ class Generator(object):
         start *= self.time_stretch
         end *= self.time_stretch
         frag = Fragment(self.channels, self.rate, (end - start))
-        self._run(frag, levels, *args, **kw)
+        self._run(frag, levels, start, *args, **kw)
         self.filters.run(frag)
         self.frag.mix(frag, start, levels=kw.pop('mix_levels', None))
 
@@ -171,8 +169,8 @@ class SourceGenerator(Generator):
         """Sound source."""
         return self._source
 
-    def _run(self, frag, levels, freq, phase=0.0, *args, **kw):
-        self.source(frag, levels, freq, phase, *args)
+    def _run(self, frag, levels, origin, freq, phase=0.0, *args, **kw):
+        self.source(frag, levels, freq, phase, origin, *args)
 
 
 class SineGenerator(SourceGenerator):
@@ -248,9 +246,9 @@ class OvertonesGenerator(SourceGenerator):
             l = _splat.lin2dB(math.exp(-j / k))
             self.overtones.append(((j + 1), 0.0, l))
 
-    def _run(self, frag, levels, freq, phase=0.0, *args, **kw):
-        super(OvertonesGenerator, self)._run(frag, levels, freq, phase,
-                                             self.overtones, *args, **kw)
+    def _run(self, frag, levels, origin, freq, phase=0.0, *args, **kw):
+        super(OvertonesGenerator, self).source(frag, levels, freq,
+                                               self.overtones, phase, origin)
 
 
 class Particle(object):
