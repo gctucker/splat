@@ -19,6 +19,12 @@ import os
 import struct
 import wave
 import md5
+try:
+    # For extra standard audio formats
+    import audiotools
+    has_audiotools = True
+except ImportError:
+    has_audiotools = False
 import _splat
 import splat
 
@@ -40,10 +46,10 @@ def _get_fmt(f, fmt):
 def _read_chunks(frag, read_frames, frame_size, sample_type, sample_width):
     rem = len(frag)
     cur = 0
-    chunk_size = (64 * 1024) / frame_size
+    chunk_size = 65536 / frame_size
 
     while rem > 0:
-        n = chunk_size if (rem >= chunk_size) else rem
+        n = min(chunk_size, rem)
         raw_bytes = bytearray(read_frames(n))
         frag.import_bytes(raw_bytes, frag.rate, frag.channels, sample_type,
                           sample_width, cur)
@@ -94,6 +100,30 @@ def open_saf(saf_file, fmt=None):
     return frag
 
 audio_file_openers = [open_wav, open_saf,]
+
+if has_audiotools is True:
+    def open_audiotools(f_name, fmt=None):
+        if not isinstance(f_name, str):
+            return None
+        f = audiotools.open(f_name)
+        precision = f.bits_per_sample()
+        pcm = f.to_pcm()
+        frag = Fragment(rate=f.sample_rate(), channels=f.channels(),
+                        length=f.total_frames())
+        frame_size = frag.channels * precision / 8
+        chunk_size = 65536 / frame_size
+        rem = f.total_frames()
+        cur = 0
+        while rem > 0:
+            n = min(chunk_size, rem)
+            frames = pcm.read(n)
+            raw_bytes = bytearray(frames.to_bytes(False, True))
+            frag.import_bytes(raw_bytes, frag.rate, frag.channels,
+                              splat.SAMPLE_INT, precision, cur)
+            rem -= frames.frames
+            cur += frames.frames
+        return frag
+    audio_file_openers.append(open_audiotools)
 
 # -----------------------------------------------------------------------------
 # Audio file savers
