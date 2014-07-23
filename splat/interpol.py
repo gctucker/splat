@@ -34,7 +34,7 @@ class Polynomial(object):
         self._coefs = tuple(coefs)
 
     def __repr__(self):
-        return repr(self._coefs)
+        return repr(self.coefs)
 
     @property
     def coefs(self):
@@ -47,18 +47,18 @@ class Polynomial(object):
         coefs = tuple((k * (i + 1)) for i, k in enumerate(self.coefs[1:]))
         return Polynomial(coefs)
 
-    def integral(self, k0=0.0):
+    def integral(self, y0=0.0):
         """Create a :py:class:`splat.interpol.Polynomial` object with an
-        integral of this polynomial.  The ``k0`` value is the arbitrary
+        integral of this polynomial.  The ``y0`` value is the arbitrary
         constant coefficient."""
-        coefs = (k0,) + tuple((k / (i + 1)) for i, k in enumerate(self.coefs))
+        coefs = (y0,) + tuple((k / (i + 1)) for i, k in enumerate(self.coefs))
         return Polynomial(coefs)
 
     def value(self, x):
         """Return the value of the polynomial for the given ``x`` input
         value."""
         res = 0
-        for p, k in enumerate(self._coefs):
+        for p, k in enumerate(self.coefs):
             res += k * (x ** p)
         return res
 
@@ -177,9 +177,15 @@ class PolyList(object):
         xlist.append(self[-1][1])
         return list((x, self.value(x)) for x in xlist)
 
-    def integral(self, k0=0.0):
-        return PolyList(list((x0, x1, p.integral(k0)) for x0, x1, p in self),
-                        self.scale)
+    def integral(self, y0=0.0):
+        pols = []
+        for x0, x1, p in self:
+            p2 = p.integral(0.0)
+            y1 = p2.value(x0)
+            p2._coefs = (y0 - y1,) + p2._coefs[1:]
+            pols.append((x0, x1, p2))
+            y0 = p2.value(x1)
+        return PolyList(pols, self.scale)
 
     def derivative(self):
         return PolyList(list((x0, x1, p.derivative()) for x0, x1, p in self),
