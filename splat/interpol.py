@@ -298,4 +298,6 @@ class Spline(PolyList):
 
 
 def freqmod(pts):
-    return Spline(pts, (1 / pts[0][1])).integral()
+    y0 = pts[0][1]
+    norm_pts = list((pt[0], (pt[1] - y0)) + pt[2:] for pt in pts)
+    return Spline(norm_pts, (1 / y0)).integral()
